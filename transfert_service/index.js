@@ -3,7 +3,6 @@ const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
 const transfersRouter = require("./routes/transfers");
 const auth = require("./middleware/auth");
-require('dotenv').config();
 
 const app = express();
 app.use(express.json());

@@ -107,9 +107,15 @@ app.use('/accounts', accountsRouter);
  *             schema:
  *               type: object
  *               properties:
- *                 status: { type: string, example: UP }
- *                 service:{ type: string, example: account-service }
- *                 port:   { type: integer, example: 3003 }
+ *                 status:
+ *                   type: string
+ *                   example: "UP"
+ *                 service:
+ *                   type: string
+ *                   example: "account-service"
+ *                 port:
+ *                   type: integer
+ *                   example: 3003
  */
 app.get('/health', (req, res) => {
   res.json({ status: 'UP', service: 'account-service', port: PORT });

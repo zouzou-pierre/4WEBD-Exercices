@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const db = require('../db');
+const db = require('../shared/db');
 const { authMiddleware, adminOnly } = require('../middleware/auth');
 
 const router = express.Router();

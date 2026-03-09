@@ -1,39 +1,19 @@
-# ───────────────
-#   BUILD STAGE
-# ───────────────
-FROM node:18-bookworm-slim AS builder
-
+FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 
-# 1) Installer dépendances système nécessaires à la compilation
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 build-essential pkg-config libsqlite3-dev ca-certificates \
- && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y python3 build-essential pkg-config libsqlite3-dev
 
-# 2) Copier manifest et installer deps (meilleur cache)
 COPY package*.json ./
+RUN npm install --production
 
-# Installe les dépendances de prod
-RUN npm ci --only=production
-
-# 3) Copier le code
 COPY . .
 
-# ───────────────
-#   RUN STAGE
-# ───────────────
-FROM node:18-bookworm-slim
-
+FROM node:20-bookworm-slim
 WORKDIR /app
 
-# Runtime libs (sqlite)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libsqlite3-0 ca-certificates \
- && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y libsqlite3-0
 
-# Copier les artefacts du builder
 COPY --from=builder /app /app
 
 EXPOSE 3003
-ENV NODE_ENV=production
 CMD ["node", "index.js"]

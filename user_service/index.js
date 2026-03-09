@@ -1,10 +1,22 @@
 const express = require('express');
+const app = express();
+app.use(express.json());
+
+const cors = require("cors");
+app.use(cors());
+    app.use(function (req, res, next) {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        if (req.method === 'OPTIONS') {
+            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+            res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+            return res.status(200).json({});
+        }
+        next();
+    });
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const { PORT } = require('./config');
 
-const app = express();
-app.use(express.json());
 
 // ─── Swagger ──────────────────────────────────────────────────────────────────
 
@@ -95,9 +107,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
 const router = express.Router();
-const db = require('../db'); // selon ton organisation
-const pagination = require('../middleware/pagination');
-
+const db = require('/app/shared/db');
+const pagination = require('/app/shared/middleware/pagination');
 // ─── GET /users — paginé ────────────────────────────────────────────────
 /**
  * @swagger

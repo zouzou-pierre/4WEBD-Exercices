@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { db, nextId } = require('../db');
-const pagination = require('../middleware/pagination');
-
+const db = require('/app/shared/db');
+const pagination = require('/app/shared/middleware/pagination');
 /**
  * @swagger
  * /accounts:

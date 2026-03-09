@@ -1,7 +1,7 @@
 const express = require('express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
-const Database = require('better-sqlite3');
+const db = require('/app/shared/db');
 const path = require('path');
 
 const app = express();
@@ -10,28 +10,6 @@ app.use(express.json());
 const PORT = process.env.PORT || 3001;
 
 // ─── SQLite ───────────────────────────────────────────────────────────────────
-
-const db = new Database(path.join(__dirname, 'notifications.db'));
-db.pragma('journal_mode = WAL');
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS notifications (
-    id              TEXT PRIMARY KEY,
-    type            TEXT NOT NULL,
-    recipient       TEXT NOT NULL,
-    message         TEXT NOT NULL,
-    metadata        TEXT,
-    status          TEXT NOT NULL DEFAULT 'SENT',
-    createdAt       TEXT NOT NULL
-  );
-`);
-
-db.exec(`
-  CREATE INDEX IF NOT EXISTS idx_notifications_createdAt
-    ON notifications (createdAt DESC);
-  CREATE INDEX IF NOT EXISTS idx_notifications_type_createdAt
-    ON notifications (type, createdAt DESC);
-`);
 
 console.log('[DB] Base SQLite connectée — notifications.db');
 

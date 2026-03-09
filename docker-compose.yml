@@ -1,6 +1,24 @@
 version: "3.9"
 
 services:
+
+  user_service:
+    build: ./user_service
+    container_name: user_service
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - SQLITE_PATH=/data/bank.db
+    volumes:
+      - sqlite_data:/data
+      - ./shared:/app/shared
+    depends_on:
+      - sqlite
+    networks:
+      - bank_net
+
   account_service:
     build: ./account_service
     container_name: account_service
@@ -9,9 +27,84 @@ services:
       - "3003:3003"
     environment:
       - PORT=3003
+      - SQLITE_PATH=/data/bank.db
+    volumes:
+      - sqlite_data:/data
+      - ./shared:/app/shared
+    depends_on:
+      - sqlite
     networks:
-      - micro_net
+      - bank_net
 
+  notification_service:
+    build: ./notification_service
+    container_name: notification_service
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - SQLITE_PATH=/data/bank.db
+    volumes:
+      - sqlite_data:/data
+      - ./shared:/app/shared
+    depends_on:
+      - sqlite
+    networks:
+      - bank_net
+
+  transfert_service:
+    build: ./transfert_service
+    container_name: transfert_service
+    restart: unless-stopped
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
+      - SQLITE_PATH=/data/bank.db
+    volumes:
+      - sqlite_data:/data
+      - ./shared:/app/shared
+    depends_on:
+      - sqlite
+    networks:
+      - bank_net
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    networks:
+      - bank_net_front
+
+  # ───────────────────────────────
+  # Base SQLite (volume partagé)
+  # ───────────────────────────────
+  sqlite:
+    image: alpine
+    container_name: sqlite_volume
+    command: ["tail", "-f", "/dev/null"]  # conteneur "dummy"
+    ports:
+      - "3306:3306"  # Port exposé pour les outils de gestion
+    volumes:
+      - sqlite_data:/data
+    networks:
+      - bank_net
+
+# ───────────────────────────────
+# Réseau partagé
+# ───────────────────────────────
 networks:
-  micro_net:
+  bank_net:
     driver: bridge
+  bank_net_front:
+    driver: bridge
+
+# ───────────────────────────────
+# Volume SQLite partagé
+# ───────────────────────────────
+volumes:
+  sqlite_data:
+    driver: local

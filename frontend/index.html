@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Banque – Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>💳 Banque – Dashboard</h1>
+
+  <section>
+    <h2>Authentification</h2>
+    <div class="card">
+      <h3>Créer un compte</h3>
+      <input id="regFirst" placeholder="Prénom">
+      <input id="regLast" placeholder="Nom">
+      <input id="regEmail" placeholder="Email">
+      <input id="regPass" type="password" placeholder="Mot de passe">
+      <button id="btnRegister">Créer</button>
+    </div>
+
+    <div class="card">
+      <h3>Connexion</h3>
+      <input id="logEmail" placeholder="Email">
+      <input id="logPass" type="password" placeholder="Mot de passe">
+      <button id="btnLogin">Se connecter</button>
+    </div>
+
+    <div id="userInfo" class="card hidden"></div>
+  </section>
+
+  <section>
+    <h2>Mes Comptes</h2>
+    <button id="btnLoadAccounts">Charger mes comptes</button>
+    <div id="accounts"></div>
+  </section>
+
+  <section>
+    <h2>Transfert</h2>
+    <div class="card">
+      <input id="fromAcc" placeholder="Compte source">
+      <input id="toAcc" placeholder="Compte destination">
+      <input id="amount" type="number" placeholder="Montant">
+      <button id="btnTransfer">Transférer</button>
+    </div>
+    <div id="transferResult"></div>
+  </section>
+
+  <section>
+    <h2>Notifications</h2>
+    <button id="btnLoadNotifications">Charger</button>
+    <div id="notifications"></div>
+  </section>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>

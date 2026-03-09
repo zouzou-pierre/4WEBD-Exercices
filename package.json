@@ -1,0 +1,21 @@
+{
+  "name": "app_banque",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zouzou-pierre/4WEBD-Exercices.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/zouzou-pierre/4WEBD-Exercices/issues"
+  },
+  "homepage": "https://github.com/zouzou-pierre/4WEBD-Exercices#readme"
+}
