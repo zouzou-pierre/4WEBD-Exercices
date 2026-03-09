@@ -1,13 +1,19 @@
-FROM node:25-slim
-
+FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 
-COPY package*.json ./
+RUN apt-get update && apt-get install -y python3 build-essential pkg-config libsqlite3-dev
 
-RUN npm install
+COPY package*.json ./
+RUN npm install --production
 
 COPY . .
 
-EXPOSE 3001
+FROM node:20-bookworm-slim
+WORKDIR /app
 
-CMD ["npm", "start"]
+RUN apt-get update && apt-get install -y libsqlite3-0
+
+COPY --from=builder /app /app
+
+EXPOSE 3001
+CMD ["node", "index.js"]
