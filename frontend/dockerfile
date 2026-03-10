@@ -1,5 +1,12 @@
-FROM nginx:stable-alpine
+FROM node:18-alpine
 
-COPY . /usr/share/nginx/html
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci --omit=dev || npm install --omit=dev
 
-EXPOSE 80
+COPY index.js ./
+
+ENV PORT=8080
+EXPOSE 8080
+
+CMD ["node", "index.js"]

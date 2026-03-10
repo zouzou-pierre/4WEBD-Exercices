@@ -220,6 +220,64 @@ router.patch('/:id/credit', (req, res) => {
   db.prepare(`UPDATE accounts SET balance = ? WHERE id = ?`).run(newBalance, req.params.id);
   res.json({ success: true, balance: newBalance });
 });
+/**
+ * @swagger
+ * /accounts:
+ *   post:
+ *     summary: Créer un compte
+ *     tags: [Accounts]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { $ref: '#/components/schemas/CreateAccountInput' }
+ *     responses:
+ *       201:
+ *         description: Compte créé
+ *         headers:
+ *           Location:
+ *             description: URL du nouveau compte
+ *             schema: { type: string }
+ *         content:
+ *           application/json:
+ *             schema: { $ref: '#/components/schemas/Account' }
+ *       400: { $ref: '#/components/responses/BadRequest' }
+ */
+router.post('/', (req, res) => {
+  const { ownerId, balance } = req.body || {};
+
+  if (!ownerId || typeof ownerId !== 'string' || ownerId.trim().length === 0) {
+    return res.status(400).json({ error: 'ownerId requis (string non vide)' });
+  }
+
+  const initialBalance = (balance === undefined || balance === null) ? 0 : Number(balance);
+  if (Number.isNaN(initialBalance) || initialBalance < 0) {
+    return res.status(400).json({ error: 'balance doit être un nombre >= 0' });
+  }
+
+  // Génération d'ID simple (tu peux remplacer par uuid v4 si tu as une lib)
+  const id = `acc_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+  const createdAt = new Date().toISOString();
+
+  try {
+    db.prepare(`
+      INSERT INTO accounts (id, ownerId, balance, createdAt)
+      VALUES (?, ?, ?, ?)
+    `).run(id, ownerId, initialBalance, createdAt);
+
+    const created = db.prepare(`SELECT * FROM accounts WHERE id = ?`).get(id);
+
+    // Location header vers la ressource créée
+    const baseURL = `${req.protocol}://${req.get('host')}${req.baseUrl}`;
+    res.status(201)
+      .location(`${baseURL}/${encodeURIComponent(id)}`)
+      .json(created);
+
+  } catch (err) {
+    // Erreurs communes : contrainte unique, schéma absent, etc.
+    console.error('POST /accounts error:', err);
+    return res.status(400).json({ error: 'Impossible de créer le compte' });
+  }
+});
 
 module.exports = router;
-``

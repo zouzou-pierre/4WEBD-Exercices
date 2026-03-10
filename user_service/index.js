@@ -110,6 +110,7 @@ app.use('/auth', require('./routes/auth'));
 app.use('/users', require('./routes/users'));
 
 app.get('/health', (req, res) => {
+  console.log('serveur port : ', PORT);
   res.json({ status: 'UP', service: 'user-service', port: PORT });
 });
 
