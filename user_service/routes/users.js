@@ -7,6 +7,9 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
+const findById    = (id)    => db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+const findByEmail = (email) => db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+
 /**
  * @swagger
  * /users:
@@ -43,8 +46,12 @@ router.use(authMiddleware);
 router.get('/', adminOnly, (req, res) => {
   const page  = Math.max(1, parseInt(req.query.page)  || 1);
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
+  const offset = (page - 1) * limit;
 
-  const { data, total, totalPages } = db.findPaginated({ page, limit });
+  const data  = db.prepare('SELECT * FROM users ORDER BY createdAt DESC LIMIT ? OFFSET ?').all(limit, offset);
+  const total = db.prepare('SELECT COUNT(*) AS count FROM users').get().count;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+
   const users = data.map(({ password, ...u }) => u);
 
   console.log(`[USERS] Liste demandée par admin: ${req.user.id} — page ${page}/${totalPages}`);
@@ -102,7 +109,7 @@ router.get('/:id', (req, res) => {
     return res.status(403).json({ error: 'Accès interdit' });
   }
 
-  const user = db.findById(id);
+  const user = findById(id);
   if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
 
   console.log(`[USERS] Profil consulté — id: ${id}`);
@@ -164,23 +171,36 @@ router.put('/:id', async (req, res) => {
     return res.status(403).json({ error: 'Accès interdit' });
   }
 
-  if (!db.findById(id)) return res.status(404).json({ error: 'Utilisateur introuvable' });
+  if (!findById(id)) return res.status(404).json({ error: 'Utilisateur introuvable' });
 
   const { firstName, lastName, email, password } = req.body;
 
   if (email) {
-    const existing = db.findByEmail(email);
+    const existing = findByEmail(email);
     if (existing && existing.id !== id) {
       return res.status(400).json({ error: 'Cet email est déjà utilisé' });
     }
   }
 
-  const fields = { firstName, lastName, email };
-  if (password) fields.password = await bcrypt.hash(password, 10);
+  const fields = {};
+  if (firstName) fields.firstName = firstName;
+  if (lastName)  fields.lastName  = lastName;
+  if (email)     fields.email     = email;
+  if (password)  fields.password  = await bcrypt.hash(password, 10);
 
-  const updated = db.update(id, fields);
+  if (Object.keys(fields).length === 0) {
+    const user = findById(id);
+    const { password: _, ...userPublic } = user;
+    return res.status(200).json(userPublic);
+  }
+
+  const setClauses = Object.keys(fields).map(k => `${k} = ?`).join(', ');
+  const values = [...Object.values(fields), id];
+  db.prepare(`UPDATE users SET ${setClauses} WHERE id = ?`).run(...values);
+
   console.log(`[USERS] Utilisateur mis à jour — id: ${id}`);
 
+  const updated = findById(id);
   const { password: _, ...userPublic } = updated;
   return res.status(200).json(userPublic);
 });
@@ -223,9 +243,9 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', adminOnly, (req, res) => {
   const { id } = req.params;
 
-  if (!db.findById(id)) return res.status(404).json({ error: 'Utilisateur introuvable' });
+  if (!findById(id)) return res.status(404).json({ error: 'Utilisateur introuvable' });
 
-  db.remove(id);
+  db.prepare('DELETE FROM users WHERE id = ?').run(id);
   console.log(`[USERS] Utilisateur supprimé — id: ${id} par admin: ${req.user.id}`);
 
   return res.status(200).json({ message: `Utilisateur ${id} supprimé` });

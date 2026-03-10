@@ -4,15 +4,15 @@ app.use(express.json());
 
 const cors = require("cors");
 app.use(cors());
-    app.use(function (req, res, next) {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        if (req.method === 'OPTIONS') {
-            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-            res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-            return res.status(200).json({});
-        }
-        next();
-    });
+app.use(function (req, res, next) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    if (req.method === 'OPTIONS') {
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        return res.status(200).json({});
+    }
+    next();
+});
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const { PORT } = require('./config');
@@ -106,71 +106,8 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
-const router = express.Router();
-const db = require('/app/shared/db');
-const pagination = require('/app/shared/middleware/pagination');
-// ─── GET /users — paginé ────────────────────────────────────────────────
-/**
- * @swagger
- * /users:
- *   get:
- *     summary: Lister les utilisateurs
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: page
- *         schema: { type: integer, minimum: 1, default: 1 }
- *       - in: query
- *         name: limit
- *         schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
- *       - in: query
- *         name: offset
- *         schema: { type: integer, minimum: 0 }
- *       - in: query
- *         name: role
- *         schema:
- *           type: string
- *           enum: [USER, ADMIN]
- *         description: Filtrer par rôle utilisateur
- *     responses:
- *       200:
- *         description: Liste paginée des utilisateurs
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/PaginatedUsers'
- */
-router.get('/', pagination(10, 100), (req, res) => {
-  const { limit, page, offset } = req.pagination;
-  const role = req.query.role?.toUpperCase();
-
-  const where = role ? 'WHERE role = ?' : '';
-  const params = role ? [role, limit, offset] : [limit, offset];
-
-  const rows = db
-    .prepare(`SELECT id, firstName, lastName, email, role, createdAt
-              FROM users
-              ${where}
-              ORDER BY createdAt DESC
-              LIMIT ? OFFSET ?`)
-    .all(...params);
-
-  const total = db
-    .prepare(`SELECT COUNT(*) AS count FROM users ${where}`)
-    .get(...(role ? [role] : []))
-    .count;
-
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-  const hasNext = page < totalPages;
-  const hasPrev = page > 1;
-
-  return res.status(200).json({
-    data: rows,
-    pagination: { total, page, limit, totalPages, hasNext, hasPrev },
-  });
-});
+app.use('/auth', require('./routes/auth'));
+app.use('/users', require('./routes/users'));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'UP', service: 'user-service', port: PORT });

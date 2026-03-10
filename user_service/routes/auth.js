@@ -1,10 +1,14 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { randomUUID } = require('crypto');
 const db = require('../shared/db');
 const { JWT_SECRET, JWT_EXPIRES_IN } = require('../config');
 
 const router = express.Router();
+
+const findByEmail = (email) => db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+const findById   = (id)    => db.prepare('SELECT * FROM users WHERE id = ?').get(id);
 
 /**
  * @swagger
@@ -59,14 +63,14 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ error: 'Tous les champs sont requis : firstName, lastName, email, password' });
   }
 
-  if (db.findByEmail(email)) {
+  if (findByEmail(email)) {
     console.log(`[AUTH] Email déjà utilisé — ${email}`);
     return res.status(400).json({ error: 'Cet email est déjà utilisé' });
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
   const newUser = {
-    id: db.nextId(),
+    id: 'usr-' + randomUUID(),
     firstName,
     lastName,
     email,
@@ -75,10 +79,13 @@ router.post('/register', async (req, res) => {
     createdAt: new Date().toISOString(),
   };
 
-  const created = db.insert(newUser);
-  console.log(`[AUTH] Inscription réussie — id: ${created.id}, email: ${created.email}, role: ${created.role}`);
+  db.prepare(
+    'INSERT INTO users (id, firstName, lastName, email, password, role, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).run(newUser.id, newUser.firstName, newUser.lastName, newUser.email, newUser.password, newUser.role, newUser.createdAt);
 
-  const { password: _, ...userPublic } = created;
+  console.log(`[AUTH] Inscription réussie — id: ${newUser.id}, email: ${newUser.email}, role: ${newUser.role}`);
+
+  const { password: _, ...userPublic } = newUser;
   return res.status(201).json(userPublic);
 });
 
@@ -137,7 +144,7 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ error: 'Email et mot de passe requis' });
   }
 
-  const user = db.findByEmail(email);
+  const user = findByEmail(email);
   if (!user) {
     console.log(`[AUTH] Utilisateur introuvable — ${email}`);
     return res.status(401).json({ error: 'Identifiants incorrects' });
@@ -182,7 +189,7 @@ router.post('/login', async (req, res) => {
  *               $ref: '#/components/schemas/Error'
  */
 router.get('/me', require('../middleware/auth').authMiddleware, (req, res) => {
-  const user = db.findById(req.user.id);
+  const user = findById(req.user.id);
   if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
 
   console.log(`[AUTH] Profil consulté — id: ${user.id}`);
