@@ -4,8 +4,6 @@ services:
     build: ./user_service
     container_name: user_service_1
     restart: unless-stopped
-    ports:
-      - "3001:3001"
     environment:
       - PORT=3001
       - SQLITE_PATH=/data/bank.db
@@ -39,24 +37,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-
-  user_service:
-    build: ./user_service
-    container_name: user_service
-    restart: unless-stopped
-    ports:
-      - "3001:3001"
-    environment:
-      - PORT=3001
-      - SQLITE_PATH=/data/bank.db
-    volumes:
-      - sqlite_data:/data
-      - ./shared:/app/shared
-    depends_on:
-      - sqlite
-    networks:
-      - bank_net
+      - ./nginx.conf:/etc/nginx.conf:ro
 
   account_service:
     build: ./account_service
