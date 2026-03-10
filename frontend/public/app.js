@@ -1,9 +1,10 @@
-const USER_API = "http://localhost:3001";
-const ACCOUNT_API = "http://localhost:3003";
-const TRANSFER_API = "http://localhost:3004";
-const NOTIF_API = "http://localhost:3002";
+const USER_API = "";
+const ACCOUNT_API = "";
+const TRANSFER_API = "";
+const NOTIF_API = "";
 
 let token = null;
+let currentUser = null;
 
 function $(id) { return document.getElementById(id); }
 
@@ -15,13 +16,16 @@ async function register() {
       email: $("regEmail").value,
       password: $("regPass").value
     };
-    const res = await fetch(`${USER_API}/auth/register`, {
+    const res = await fetch(`${USER_API}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     });
-    const text = await res.text();
-    alert(text);
+    const data = await res.json();
+    if (!res.ok) {
+      return alert(data.error || "Erreur inscription");
+    }
+    alert("Inscription réussie ! Vous pouvez vous connecter.");
   } catch (e) {
     console.error("Register error:", e);
     alert("Erreur register (voir console)");
@@ -34,7 +38,7 @@ async function login() {
       email: $("logEmail").value,
       password: $("logPass").value
     };
-    const res = await fetch(`${USER_API}/auth/login`, {
+    const res = await fetch(`${USER_API}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
@@ -45,8 +49,9 @@ async function login() {
       return alert(data.error || "Login failed");
     }
     token = data.token;
+    currentUser = data.user;
     $("userInfo").classList.remove("hidden");
-    $("userInfo").innerHTML = `<b>Connecté :</b> ${data.user.email}`;
+    $("userInfo").innerHTML = `<b>Connecté :</b> ${data.user.email} (${data.user.id})`;
   } catch (e) {
     console.error("Login error:", e);
     alert("Erreur login (voir console)");
@@ -54,9 +59,9 @@ async function login() {
 }
 
 async function loadAccounts() {
-  if (!token) return alert("Connecte-toi d'abord !");
+  if (!token || !currentUser) return alert("Connecte-toi d'abord !");
   try {
-    const res = await fetch(`${ACCOUNT_API}/accounts`, {
+    const res = await fetch(`${ACCOUNT_API}/api/accounts?ownerId=${encodeURIComponent(currentUser.id)}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
     const data = await res.json();
@@ -75,7 +80,7 @@ async function transfer() {
       toAccountId: $("toAcc").value,
       amount: Number($("amount").value)
     };
-    const res = await fetch(`${TRANSFER_API}/transfers`, {
+    const res = await fetch(`${TRANSFER_API}/api/transferts`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -83,8 +88,8 @@ async function transfer() {
       },
       body: JSON.stringify(body)
     });
-    const text = await res.text();
-    $("transferResult").innerHTML = `<pre>${text}</pre>`;
+    const data = await res.json();
+    $("transferResult").innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
   } catch (e) {
     console.error("Transfer error:", e);
     alert("Erreur transfert (voir console)");
@@ -93,7 +98,7 @@ async function transfer() {
 
 async function loadNotifications() {
   try {
-    const res = await fetch(`${NOTIF_API}/notifications`);
+    const res = await fetch(`${NOTIF_API}/api/notifications`);
     const data = await res.json();
     $("notifications").innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
   } catch (e) {

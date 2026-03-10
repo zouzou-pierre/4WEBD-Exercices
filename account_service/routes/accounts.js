@@ -116,36 +116,6 @@ router.get('/:id', (req, res) => {
 
 /**
  * @swagger
- * /accounts:
- *   get:
- *     summary: Lister les comptes d'un utilisateur
- *     tags: [Accounts]
- *     parameters:
- *       - in: query
- *         name: ownerId
- *         required: true
- *         schema: { type: string }
- *         description: ID de l'utilisateur propriétaire des comptes
- *     responses:
- *       200:
- *         description: Liste des comptes
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items: { $ref: '#/components/schemas/Account' }
- *       400: { $ref: '#/components/responses/BadRequest' }
- */
-router.get('/', (req, res) => {
-  const ownerId = req.query.ownerId;
-  if (!ownerId) return res.status(400).json({ error: 'ownerId requis' });
-
-  const list = db.prepare(`SELECT * FROM accounts WHERE ownerId = ?`).all(ownerId);
-  res.json(list);
-});
-
-/**
- * @swagger
  * /accounts/{id}/debit:
  *   patch:
  *     summary: Débiter un compte

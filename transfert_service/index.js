@@ -6,7 +6,6 @@ const auth = require("./middleware/auth");
 
 const app = express();
 app.use(express.json());
-app.use(auth);
 
 const PORT = process.env.PORT || 3004;
 
@@ -39,7 +38,7 @@ const swaggerOptions = {
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-app.use("/transfers", transfersRouter);
+app.use("/transferts", auth, transfersRouter);
 
 /**
  * @swagger

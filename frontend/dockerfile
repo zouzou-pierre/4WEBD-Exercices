@@ -5,6 +5,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev || npm install --omit=dev
 
 COPY index.js ./
+COPY public ./public
 
 ENV PORT=8080
 EXPOSE 8080

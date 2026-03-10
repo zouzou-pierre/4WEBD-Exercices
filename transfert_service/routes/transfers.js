@@ -77,4 +77,89 @@ router.get("/", pagination(10, 100), (req, res) => {
   });
 });
 
+/**
+ * @swagger
+ * /transferts:
+ *   post:
+ *     summary: Effectuer un virement
+ *     tags: [Transfers]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [fromAccountId, toAccountId, amount]
+ *             properties:
+ *               fromAccountId:
+ *                 type: string
+ *                 example: acc_123
+ *               toAccountId:
+ *                 type: string
+ *                 example: acc_456
+ *               amount:
+ *                 type: number
+ *                 example: 100
+ *               currency:
+ *                 type: string
+ *                 default: EUR
+ *     responses:
+ *       201:
+ *         description: Virement effectué
+ *       400:
+ *         description: Paramètres invalides ou solde insuffisant
+ */
+router.post("/", (req, res) => {
+  const { fromAccountId, toAccountId, amount, currency = "EUR" } = req.body;
+
+  if (!fromAccountId || !toAccountId || !amount) {
+    return res.status(400).json({ error: "fromAccountId, toAccountId et amount sont requis" });
+  }
+
+  if (amount <= 0) {
+    return res.status(400).json({ error: "Le montant doit être positif" });
+  }
+
+  if (fromAccountId === toAccountId) {
+    return res.status(400).json({ error: "Les comptes source et destination doivent être différents" });
+  }
+
+  const fromAccount = db.prepare("SELECT * FROM accounts WHERE id = ?").get(fromAccountId);
+  if (!fromAccount) {
+    return res.status(404).json({ error: "Compte source introuvable" });
+  }
+
+  const toAccount = db.prepare("SELECT * FROM accounts WHERE id = ?").get(toAccountId);
+  if (!toAccount) {
+    return res.status(404).json({ error: "Compte destination introuvable" });
+  }
+
+  if (fromAccount.balance < amount) {
+    return res.status(400).json({ error: "Solde insuffisant" });
+  }
+
+  const id = `txn-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const createdAt = new Date().toISOString();
+  const executedBy = req.user.id;
+
+  const runTransfer = db.transaction(() => {
+    db.prepare("UPDATE accounts SET balance = balance - ? WHERE id = ?").run(amount, fromAccountId);
+    db.prepare("UPDATE accounts SET balance = balance + ? WHERE id = ?").run(amount, toAccountId);
+    db.prepare(
+      "INSERT INTO transfers (id, fromAccountId, toAccountId, amount, currency, executedBy, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    ).run(id, fromAccountId, toAccountId, amount, currency, executedBy, createdAt);
+  });
+
+  try {
+    runTransfer();
+    console.log(`[TRANSFER] ${id} : ${fromAccountId} → ${toAccountId} | ${amount} ${currency} par ${executedBy}`);
+    res.status(201).json({ id, fromAccountId, toAccountId, amount, currency, executedBy, createdAt });
+  } catch (err) {
+    console.error("[TRANSFER] Erreur:", err);
+    res.status(500).json({ error: "Erreur lors du virement" });
+  }
+});
+
 module.exports = router;
